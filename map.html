@@ -11,7 +11,7 @@
     </script>
     <!-- my stuff -->
     <meta charset="utf-8">
-    <title>Canberra's schools</title>
+    <title>Canberra's public housing</title>
     <meta name="author" content="Markus Mannheim">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Initial scripts -->
@@ -36,9 +36,10 @@
         <defs>
           <linearGradient id="gradient" x1="0%" x2="100%" y1="0%" y2="0%"></linearGradient>
         </defs>
-        <rect height=24 y=22></rect>
-        <g id="axisGroup" transform="translate(0, 46)">
-          <text id="axisLabel" y=-29>social housing (%)</text>
+        <rect height=24 y=32></rect>
+        <g id="axisGroup" transform="translate(0, 56)">
+          <text id="axisLabel" y=-32>social housing (%)</text>
+          <text id="axisNote" y=36>excludes suburbs with fewer than 30 homes</text>
         </g>
       </svg>
       <div id="tip"></div>
@@ -62,6 +63,7 @@
           legend = d3.select("#legend");
           axisGroup = d3.select("#axisGroup");
           axisLabel = d3.select("#axisLabel");
+          axisNote = d3.select("#axisNote");
           tip = d3.select("#tip");
           d3.selectAll(".option")
             .on("click", selectYear);
@@ -114,6 +116,9 @@
           projection = d3.geoIdentity();
           path = d3.geoPath()
             .projection(projection);
+          voronoi = d3.voronoi()
+            .x(function(d) { return path.centroid(d)[0]; })
+            .y(function(d) { return path.centroid(d)[1]; });
           year = 2016;
           filterSuburbs();
         });
@@ -121,16 +126,16 @@
         dimensions = document.body.getBoundingClientRect();
         width = dimensions.width;
         height = dimensions.height;
-        projection.fitExtent([[16, 40], [width - 16, height - 56]], {
+        projection.fitExtent([[0, 32], [width - 23, height - 56]], {
           type: "FeatureCollection",
           features: suburbData
             .features
             .filter(function(d) { return d.properties.suburb !== "Paddys River"; })
         });
-        path.pointRadius(width < 500 ? 5 : 8);
-        // voronoi.size([width, height]);
+        voronoi.size([width, height]);
         x.range([width * .125, width * .875]);
         axisLabel.attr("x", width / 2);
+        axisNote.attr("x", width / 2);
         legend.select("rect")
           .attr("x", width * .125)
           .attr("width", width * .75);
@@ -140,24 +145,36 @@
         border.attr("d", path);
         mesh.attr("d", path);
         axisGroup.call(axis);
-        suburbs = mapGroup
-          .selectAll(".suburb")
-            .data(activeData, function(d) { return d.properties.suburb; });
-        suburbs.exit()
-          .attr("d", path)
+        groups = mapGroup
+          .selectAll(".group")
+            .data(voronoi.polygons(activeData), function(d) { return d.data.properties.suburb; });
+        groups.exit()
+          .select(".suburb")
+            .attr("d", function(d) { return path(d.data); });
+        groups.exit()
           .transition()
             .style("opacity", 0)
           .remove();
-        suburbs.enter()
-          .append("path")
-            .classed("suburb", true)
-            .attr("d", path)
-            .style("fill", function(d) { return colours(d.properties.data.filter(function(e) { return e.year == year; })[0].social); })
-            .transition()
-              .style("opacity", 1);
-        suburbs.attr("d", path)
+        entering = groups
+          .enter().append("g")
+            .classed("group", true);
+        entering.transition()
+          .style("opacity", 1);
+        entering.append("path")
+          .classed("suburb", true)
+            .attr("d", function(d) { return path(d.data); })
+            .style("fill", function(d) { return colours(d.data.properties.data.filter(function(e) { return e.year == year; })[0].social); });
+        entering.append("path")
+          .classed("cell", true)
+          .attr("d", function(d) { return !d ? null : d3.line()(d) + "Z"; })
+          .on("mouseover", mouseover)
+          .on("mouseout", mouseout);
+        groups.select(".suburb")
+          .attr("d", function(d) { return path(d.data); })
           .transition()
-            .style("fill", function(d) { return colours(d.properties.data.filter(function(e) { return e.year == year; })[0].social); });
+            .style("fill", function(d) { return colours(d.data.properties.data.filter(function(e) { return e.year == year; })[0].social); });
+        groups.select(".cell")
+          .attr("d", function(d) { return !d ? null : d3.line()(d) + "Z"; });
         d3.select(".water")
           .raise();
       }
@@ -167,12 +184,10 @@
           .filter(function(d) {
             return d.properties.years.includes(year);
           });
-        console.log(year)
         resize();
       }
       function selectYear() {
         year = +this.getAttribute("value");
-        console.log(year);
         d3.selectAll(".option")
           .classed("selected", false);
         d3.select(this)
@@ -182,16 +197,16 @@
       function mouseover(d) {
         d3.select(this.parentNode)
           .raise()
-          .select(".point")
+          .select(".suburb")
             .classed("selected", true);
         centroid = path.centroid(d.data);
         tip.style("opacity", 0)
           .style("top", "0px") // reset position to tool tip for correct sizing
           .style("left", "0px")
-          .html("<p>" + d.data.properties.school + "</p>"
-              + "<p>" + d3.format(".0%")(d.data.properties.use) + " utilisation</p>"
-              + "<p>" + d3.format(",.0f")(d.data.properties.students) + " students</p>"
-              + "<p>" + d3.format(",.0f")(d.data.properties.capacity) + " capacity</p>");
+          .html("<p>" + d.data.properties.suburb + "</p>"
+              + "<p><strong>" + d3.format(".0%")(d.data.properties.data.filter(function(e) { return e.year == year; })[0].social) + "</strong> of all dwellings in " + year + "</p>"
+              + "<p><strong>" + d3.format(",.0f")(d.data.properties.data.filter(function(e) { return e.year == year; })[0].public) + "</strong> public housing dwellings</p>"
+              + "<p><strong>" + d3.format(",.0f")(d.data.properties.data.filter(function(e) { return e.year == year; })[0].community) + "</strong> community housing dwellings</p>");
         // set location of tool tip to ensure it's always inside chart
         let tipWidth = parseFloat(tip.style("width"));
         let tipHeight = parseFloat(tip.style("height"));
@@ -211,7 +226,7 @@
       }
       function mouseout() {
         d3.select(this.parentNode)
-          .select(".point")
+          .select(".suburb")
             .classed("selected", false);
         tip.style("opacity", 0);
       }

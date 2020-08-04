@@ -41,7 +41,7 @@ body {
 }
 #selection {
   width: 100%;
-  padding: 0 0 10px 0;
+  padding: 0 0 16px 0;
   background-color: white;
   position: absolute;
   display: flex;
@@ -66,7 +66,7 @@ body {
   margin: 0 0 0 5px;
 }
 .option:hover {
-  background-color: #01CFFF;
+  background-color: #FF6100;
 }
 .option.selected {
   background-color: #1C1C1C;
@@ -80,6 +80,15 @@ body {
 }
 .suburb {
   stroke: rgba(28, 28, 28, 1);
+}
+.suburb.selected {
+  stroke: #FFB300;
+  stroke-width: 2;
+}
+.cell {
+  fill: rgba(0, 0, 0, 0);
+}
+.group {
   opacity: 0;
 }
 .parkland {
@@ -92,7 +101,7 @@ body {
 #legend {
   position: absolute;
   bottom: 0;
-  height: 64px;
+  height: 96px;
   width: 100%;
   background-color: white;
 }
@@ -105,6 +114,12 @@ body {
   fill: #1C1C1C;
   font-family: "ABCSans Black", "Arial Black", sans-serif;
   font-size: .9rem;
+  text-anchor: middle;
+}
+#axisNote {
+  fill: #1C1C1C;
+  font-family: "ABCSans Light", "Arial Narrow", sans-serif;
+  font-size: .8rem;
   text-anchor: middle;
 }
 #tip {
@@ -126,4 +141,14 @@ p {
 p:first-child {
   font-family: "ABCSans Regular", "Arial", sans-serif;
   font-weight: bold;
+}
+path.domain {
+  stroke: none;
+}
+.tick line {
+  stroke: #1C1C1C;
+}
+.tick text {
+  fill: #1C1C1C;
+  font-size: .7rem;
 }

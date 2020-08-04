@@ -78,8 +78,6 @@
               .data(meshData.features)
             .enter().append("path")
               .attr("class", function(d) { return d.properties.class; });
-          d3.selectAll(".water")
-            .raise();
           // colours
           range = ([
             d3.min(suburbData.features, function(d) {
@@ -199,6 +197,8 @@
           .raise()
           .select(".suburb")
             .classed("selected", true);
+        d3.selectAll(".water")
+          .raise();
         centroid = path.centroid(d.data);
         tip.style("opacity", 0)
           .style("top", "0px") // reset position to tool tip for correct sizing

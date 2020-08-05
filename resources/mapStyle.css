@@ -152,3 +152,8 @@ path.domain {
   fill: #1C1C1C;
   font-size: .7rem;
 }
+@media only screen and (min-width: 700px) {
+  #selection, #legend {
+    background-color: #f9f9f9;
+  }
+}
